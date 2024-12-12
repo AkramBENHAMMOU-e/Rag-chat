@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  vanilla-db:
+    container_name: vanilla-postgres
+    image: postgres:15  # Standard PostgreSQL image
+    ports:
+      - "5432:5432"  # Default PostgreSQL port
+    restart: always
+    environment:
+      POSTGRES_DB: vanilla_db
+      POSTGRES_USER: vanilla_user
+      POSTGRES_PASSWORD: vanilla_pwd
+    volumes:
+      - ./vanilla-init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  pgvector-db:
+    container_name: postgres-pgvector
+    image: ankane/pgvector  # PostgreSQL with pgvector pre-installed
+    ports:
+      - "5555:5432"  # Map port 5555 for the pgvector container
+    restart: always
+    environment:
+      POSTGRES_DB: vectordb
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpwd
+    volumes:
+      - ./pgvector-init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    ports:
+      - "8080:80"  # pgAdmin web interface on localhost:8080
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com  # Default login email
+      PGADMIN_DEFAULT_PASSWORD: admin         # Default login password
+    depends_on:
+      - vanilla-db
+      - pgvector-db
