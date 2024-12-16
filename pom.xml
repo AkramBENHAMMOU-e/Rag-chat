@@ -9,10 +9,21 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <repositories>
+    <repository>
+        <id>spring-milestones</id>
+        <name>Spring Milestones</name>
+        <url>https://repo.spring.io/milestone</url>
+        <snapshots>
+            <enabled>false</enabled>
+        </snapshots>
+    </repository>
+</repositories>
 
     <dependencies>
         <dependency>
@@ -25,6 +36,18 @@
             <artifactId>json</artifactId>
             <version>20210307</version> <!-- Use the latest  version available -->
         </dependency>
+
+        <!-- Spring AI Dependencies -->
+    <dependency>
+        <groupId>org.springframework.ai</groupId>
+        <artifactId>spring-ai-core</artifactId>
+        <version>0.8.0</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.ai</groupId>
+        <artifactId>spring-ai-openai</artifactId>
+        <version>0.8.0</version>
+    </dependency>
         <!-- PDF Box for PDF processing -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
@@ -74,6 +97,8 @@
             <version>0.22.1</version>
             <scope>runtime</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.springframework.ai/spring-ai-openai -->
+       
         <dependency>
             <groupId>ai.djl.pytorch</groupId>
             <artifactId>pytorch-model-zoo</artifactId>
@@ -89,6 +114,20 @@
             <artifactId>slf4j-simple</artifactId>
             <version>2.0.7</version>
         </dependency>
+
+            <!-- Apache HttpClient for making API requests -->
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>4.5.13</version> <!-- Use the latest version -->
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>4.4.13</version> <!-- Use the latest version -->
+            </dependency>
+
+
     </dependencies>
 
 </project>
