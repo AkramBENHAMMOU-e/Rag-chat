@@ -1,66 +1,89 @@
 package com.enset.test;
 
+import java.io.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonElement;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
-import java.io.IOException;
-import java.util.List;
-/*
 public class LLMService {
-    private static final String API_URL = "YOUR_LLM_API_URL"; // Replace with your LLM API URL
-    private static final String API_KEY = "YOUR_API_KEY"; // Replace with your API key
+    private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+    private static final String API_KEY = "AIzaSyDwyxB4dCVZ-SPJAflfllaLos1DbirLprs"; // Remplacez par votre clé API valide
 
+    /**
+     * Méthode pour poser une question à l'API Gemini.
+     *
+     * @param question La question posée.
+     * @return La réponse de l'API Gemini.
+     * @throws IOException En cas d'erreur réseau.
+     */
     public String askQuestion(String question) throws IOException {
         try (CloseableHttpClient client = HttpClients.createDefault()) {
-            HttpPost post = new HttpPost(API_URL);
-            post.setHeader("Content-Type", "application/json");
-            post.setHeader("Authorization", "Bearer " + API_KEY);
+            // Construire l'URL complète avec la clé API
+            String fullApiUrl = API_URL + "?key=" + API_KEY;
 
-            JsonObject json = new JsonObject();
-            json.addProperty("question", question);
-            StringEntity entity = new StringEntity(json.toString());
+            // Configurer la requête HTTP POST
+            HttpPost post = new HttpPost(fullApiUrl);
+            post.setHeader("Content-Type", "application/json");
+
+            // Construire le JSON pour la requête
+            JsonObject textPart = new JsonObject();
+            textPart.addProperty("text", question + " Veuillez répondre uniquement en français.");
+
+            JsonArray partsArray = new JsonArray();
+            partsArray.add(textPart);
+
+            JsonObject contentsObject = new JsonObject();
+            contentsObject.add("parts", partsArray);
+
+            JsonArray contentsArray = new JsonArray();
+            contentsArray.add(contentsObject);
+
+            JsonObject requestBody = new JsonObject();
+            requestBody.add("contents", contentsArray);
+
+            // Ajouter le JSON dans le corps de la requête
+            StringEntity entity = new StringEntity(requestBody.toString(), "UTF-8");
             post.setEntity(entity);
 
+            // Envoyer la requête et récupérer la réponse
             try (CloseableHttpResponse response = client.execute(post)) {
                 String jsonResponse = EntityUtils.toString(response.getEntity());
-                JsonObject jsonObject = JsonParser.parseString(jsonResponse).getAsJsonObject();
-                return jsonObject.get("answer").getAsString(); // Adjust based on actual API response structure
+                System.out.println("API Response: " + jsonResponse); // Debug: Affiche la réponse brute
+
+                // Extraire la réponse textuelle de l'API
+                JsonObject responseObject = JsonParser.parseString(jsonResponse).getAsJsonObject();
+                if (responseObject.has("candidates")) {
+                    JsonArray candidates = responseObject.getAsJsonArray("candidates");
+
+                    if (candidates != null && candidates.size() > 0) {
+                        JsonObject firstCandidate = candidates.get(0).getAsJsonObject();
+
+                        // Vérifier le contenu textuel
+                        if (firstCandidate.has("content")) {
+                            JsonObject contentObject = firstCandidate.getAsJsonObject("content");
+                            JsonArray parts = contentObject.getAsJsonArray("parts");
+
+                            // Traiter les parties du texte
+                            if (parts != null && parts.size() > 0) {
+                                JsonObject firstPart = parts.get(0).getAsJsonObject();
+                                if (firstPart.has("text")) {
+                                    return firstPart.get("text").getAsString();
+                                }
+                            }
+                        }
+                    }
+                }
+                return "Aucune réponse valide trouvée.";
             }
         }
     }
-}
-*/
 
-public class LLMService {
-    private static final String API_URL = "https://api.cohere.ai/generate";
-    private static final String API_KEY = "z52lfZ5HXQt2Ji4XckATeWM0jOCL3uUwKweELP6H"; // Replace with your Cohere API key
 
-    public String askQuestion(String question) throws IOException {
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
-            HttpPost post = new HttpPost(API_URL);
-            post.setHeader("Authorization", "Bearer " + API_KEY);
-            post.setHeader("Content-Type", "application/json");
-    
-            JsonObject json = new JsonObject();
-            question = question + "Veuillez répondre uniquement en français."; // Ensure the response is in French
-            json.addProperty("prompt", question);
-            //json.addProperty("max_tokens", 1000); // Adjust as needed
-            StringEntity entity = new StringEntity(json.toString());
-            post.setEntity(entity);
-    
-            try (CloseableHttpResponse response = client.execute(post)) {
-                String jsonResponse = EntityUtils.toString(response.getEntity());
-                System.out.println("API Response: " + jsonResponse); // Print the full response
-    
-                JsonObject jsonObject = JsonParser.parseString(jsonResponse).getAsJsonObject();
-                return jsonObject.get("text").getAsString(); // Adjust based on actual API response structure
-            }
-        }
-    }
 }

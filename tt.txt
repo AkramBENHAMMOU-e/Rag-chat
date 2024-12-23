@@ -1,0 +1,18 @@
+Flask estun micro framework open source écrit enPython. On parle de micro framework web
+parce que Flask ne propose par défaut que peu de fonctionnalités essentielles au développement
+web, comme la gestion des requêtes HTTP, le serveur web ou la gestion des cookies
+L’objectif est de conserver un noyau simple et léger, et surtout extensible. Il est donc possible
+d’ajouter des extensions supplémentaires en fonction des besoins de l’application web. Par
+exemple, une database, un système d’authentification, la gestion des téléchargements ou
+une validation de formulaire.
+À l’origine, Flask est né d’un défi lancé par Armin Ronacher qui souhaitait réaliser un framework
+web ultra complet contenu dans un seul fichier Python. Le moins que l’on puisse
+dire, c’est que le pari a réussi. Et s’il est possible que la web application tienne dans un seul
+fichier Python, ce n’est pas forcément nécessaire L’idée est de pouvoir créer à la fois des
+apps en seulement 7 lignes de code ou beaucoup plus selon la complexité du projet
+Dans tous les cas, Flask offre aux développeurs un cadre de travail minimal pour qu’ils
+puissent créer des applications web de manière rapide, simple et efficace.
+2.1 Quels sont les avantages de Flask ?
+Flask figure parmi les frameworks les plus populaires de la communauté Python. Et pour
+cause, il a été élu « Framework web le plus populaire » par le Python Developers Survey en
+2018. En outre, il est utilisé par certains grands sites, comme Pinterest ou Linkedin

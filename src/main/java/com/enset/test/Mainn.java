@@ -10,6 +10,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -29,92 +31,40 @@ import org.json.JSONArray;
 import javax.net.ssl.SSLContext;
 
  class Mainn {
-    EmbeddingGenerator embeddingGenerator = new EmbeddingGenerator();
-    public static void main(String[] args) throws IOException {
+     static EmbeddingGenerator embeddingGenerator = new EmbeddingGenerator();
+    public static void main(String[] args) throws Exception {
         Mainn main = new Mainn();
 
         PdfDocument pdfProcessor = new PdfDocument();
-        String text = pdfProcessor.extractTextFromPDF("C:\\Users\\HP\\OneDrive\\Bureau\\test\\rag_first\\ATIF_METKOUL_PFE.pdf");
+        String text = pdfProcessor.extractTextFromPDF("C:\\Users\\HP\\OneDrive\\Bureau\\test\\rag_first\\tt.txt");
         text=main.cleanText(text);
-        List<String> chunks = splitIntoParagraphs(text);
-//        for (String chunk : chunks) {
-//            System.out.println(chunk);
-//
-//            float[] vect = embeddingGenerator.generateEmbeddings(chunk);
-//            for (float value : vect) {
-//                System.out.print(value + " ");
-//            }
-//            System.out.println(vect);
-//            System.out.println("================================");
-//            main.storeVectorInDatabase(chunk,convertFloatArrayToList(vect));
-//
-//
-//        }
+        List<String> chunks = splitIntoParagraphsLastV(text);
+      for (String chunk : chunks) {
+            System.out.println(chunk);
+            System.out.println("---------------------------------------------");
 
-        String response = main.askQuestion("c'est quoi casa shop ?");
-        String response1 = main.translate(response, "fr");
-        System.out.println(response1);
+            float[] vect = embeddingGenerator.generateEmbeddings(chunk);
+            for (float value : vect) {
+                System.out.print(value + " ");
+            }
+            System.out.println(vect);
+            System.out.println("================================");
+            main.storeVectorInDatabase(chunk,convertFloatArrayToList(vect));
+
+
+        }
+
+        String response = main.askQuestion("who is Youness Atif");
+        System.out.println("English version : "+response);
+
 
         /////////////////////////
 
     }
 
-    private static final String API_URL = "https://libretranslate.de/translate"; // Public LibreTranslate instance
 
-    private static CloseableHttpClient createHttpClientWithNoSSL() throws Exception {
-        // Trust all certificates
-        TrustStrategy acceptingTrustStrategy = (X509Certificate[] chain, String authType) -> true;
 
-        // Create an SSLContext with the TrustStrategy
-        SSLContext sslContext = SSLContexts.custom()
-                .loadTrustMaterial(null, acceptingTrustStrategy)
-                .build();
 
-        // Create an SSLConnectionSocketFactory that skips hostname verification
-        SSLConnectionSocketFactory socketFactory = new SSLConnectionSocketFactory(
-                sslContext, NoopHostnameVerifier.INSTANCE);
-
-        return HttpClients.custom()
-                .setSSLSocketFactory(socketFactory)
-                .build();
-    }
-
-     public String translate(String text, String targetLanguage) throws IOException {
-         try (CloseableHttpClient client = HttpClients.createDefault()) {
-             HttpPost post = new HttpPost(API_URL);
-             post.setHeader("Content-Type", "application/json");
-
-             // Préparer le corps JSON
-             JsonObject json = new JsonObject();
-             json.addProperty("q", text);
-             json.addProperty("source", "en");
-             json.addProperty("target", targetLanguage);
-             json.addProperty("format", "text");
-
-             post.setEntity(new StringEntity(json.toString()));
-
-             // Exécuter la requête
-             try (CloseableHttpResponse response = client.execute(post)) {
-                 String jsonResponse = EntityUtils.toString(response.getEntity());
-
-                 // Log de la réponse brute
-                 System.out.println("Raw Response: " + jsonResponse);
-
-                 // Vérifiez que la réponse est au format JSON
-                 if (!jsonResponse.trim().startsWith("{")) {
-                     throw new IOException("Unexpected response format: " + jsonResponse);
-                 }
-
-                 // Utiliser JsonReader pour tolérer les JSON mal formés
-                 JsonReader jsonReader = new JsonReader(new StringReader(jsonResponse));
-                 jsonReader.setLenient(true);
-
-                 // Analyse du JSON
-                 JsonObject jsonObject = JsonParser.parseReader(jsonReader).getAsJsonObject();
-                 return jsonObject.get("translatedText").getAsString();
-             }
-         }
-     }
     public List<Double> embedTextIntoDatabase(String text) {
         // Convert text to vector
         List<Double> vector = convertTextToVector(text);
@@ -168,6 +118,46 @@ private static List<String> splitIntoParagraphs(String text) {
     }
     return paragraphs;
 }
+
+     public static List<String> splitIntoParagraphsLastV(String text) {
+         if (text == null || text.isEmpty()) {
+             return Collections.emptyList();
+         }
+
+         List<String> paragraphs = new ArrayList<>();
+         List<String> sentences = new ArrayList<>();
+
+         // D'abord, on découpe le texte en phrases individuelles
+         Pattern pattern = Pattern.compile("([^.!?]+[.!?])");
+         Matcher matcher = pattern.matcher(text);
+
+         while (matcher.find()) {
+             String sentence = matcher.group(1).trim();
+             if (!sentence.isEmpty()) {
+                 sentences.add(sentence);
+             }
+         }
+
+         // Ensuite, on regroupe les phrases par 4 pour former des paragraphes
+         StringBuilder currentParagraph = new StringBuilder();
+         int sentenceCount = 0;
+
+         for (String sentence : sentences) {
+             currentParagraph.append(sentence).append(" ");
+             sentenceCount++;
+
+             // Quand on atteint 4 phrases ou qu'on est à la dernière phrase
+             if (sentenceCount == 4 || sentences.indexOf(sentence) == sentences.size() - 1) {
+                 if (!currentParagraph.toString().trim().isEmpty()) {
+                     paragraphs.add(currentParagraph.toString().trim());
+                 }
+                 currentParagraph = new StringBuilder();
+                 sentenceCount = 0;
+             }
+         }
+
+         return paragraphs;
+     }
 
     public static List<Float> convertFloatArrayToList(float[] floatArray) {
         List<Float> floatList = new ArrayList<>();
