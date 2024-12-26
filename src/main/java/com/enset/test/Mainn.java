@@ -32,14 +32,17 @@ import javax.net.ssl.SSLContext;
 
  class Mainn {
      static EmbeddingGenerator embeddingGenerator = new EmbeddingGenerator();
+     static Mainn main = new Mainn();
     public static void main(String[] args) throws Exception {
-        Mainn main = new Mainn();
+
+
+
 
         PdfDocument pdfProcessor = new PdfDocument();
-        String text = pdfProcessor.extractTextFromPDF("C:\\Users\\HP\\OneDrive\\Bureau\\test\\rag_first\\tt.txt");
+        String text = pdfProcessor.extractTextFromPDF("C:\\Users\\HP\\OneDrive\\Bureau\\test\\rag_first\\ATIF_METKOUL_PFE.pdf");
         text=main.cleanText(text);
         List<String> chunks = splitIntoParagraphsLastV(text);
-      for (String chunk : chunks) {
+      /*for (String chunk : chunks) {
             System.out.println(chunk);
             System.out.println("---------------------------------------------");
 
@@ -52,10 +55,10 @@ import javax.net.ssl.SSLContext;
             main.storeVectorInDatabase(chunk,convertFloatArrayToList(vect));
 
 
-        }
+        }*/
 
-        String response = main.askQuestion("who is Youness Atif");
-        System.out.println("English version : "+response);
+        String response = main.askQuestion("donner la definition de docker");
+        System.out.println("result : "+response);
 
 
         /////////////////////////
@@ -63,7 +66,23 @@ import javax.net.ssl.SSLContext;
     }
 
 
+     public  void uploadUI(String chemin) throws IOException {
+         PdfDocument pdfProcessor = new PdfDocument();
+         List<String> chunks = pdfProcessor.extractPagesFromPDF(chemin);
+         for (String chunk : chunks) {
+             chunk=main.cleanText(chunk);
+             System.out.println(chunk);
+             System.out.println("---------------------------------------------");
 
+             float[] vect = embeddingGenerator.generateEmbeddings(chunk);
+             for (float value : vect) {
+                 System.out.print(value + " ");
+             }
+             System.out.println(vect);
+             System.out.println("================================");
+             main.storeVectorInDatabase(chunk,convertFloatArrayToList(vect));
+         }
+     }
 
     public List<Double> embedTextIntoDatabase(String text) {
         // Convert text to vector
@@ -87,7 +106,7 @@ import javax.net.ssl.SSLContext;
         return vector;
     }
 
-    public String cleanText(String text){
+    public static String cleanText(String text){
         return text.replaceAll("\\s+", " ").trim();
     }
 
