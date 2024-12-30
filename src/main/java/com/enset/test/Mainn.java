@@ -204,6 +204,22 @@ private static List<String> splitIntoParagraphs(String text) {
         }
     }
 
+     public static void clearDatabase() {
+         connexion conn = new connexion();
+         Connection dbConnection = conn.connect();
+         String deleteSQL = "DELETE FROM items";
+
+         try (PreparedStatement preparedStatement = dbConnection.prepareStatement(deleteSQL)) {
+             int rowsAffected = preparedStatement.executeUpdate();
+             System.out.println("Database cleared successfully. Rows affected: " + rowsAffected);
+             // Fermer la connexion après utilisation
+             dbConnection.close();
+         } catch (SQLException e) {
+             System.err.println("Error clearing database: " + e.getMessage());
+             e.printStackTrace();
+         }
+     }
+
     public List<String> similaritySearch(String testText){
         List<String> results = new ArrayList<>();
         System.out.println("keyword: " + testText);

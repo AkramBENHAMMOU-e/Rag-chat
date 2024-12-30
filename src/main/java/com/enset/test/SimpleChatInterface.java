@@ -1,16 +1,17 @@
 package com.enset.test;
 
+import javafx.animation.FadeTransition;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -21,186 +22,348 @@ import javafx.util.Duration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 public class SimpleChatInterface extends Application {
 
     private Label pdfPathLabel;
     private Button sendButton;
+    TextArea messageArea;
+    private Mainn mainn = new Mainn();
+    private LoadingIndicator loadingIndicator;
+    private ScrollPane scrollPane;
 
 
     @Override
     public void start(Stage primaryStage) {
-        // Création des éléments de l'interface
-        VBox chatBox = new VBox(10); // Conteneur pour les messages
-        chatBox.setPadding(new Insets(10));
-        chatBox.setBackground(new Background(new BackgroundFill(Color.LIGHTBLUE, CornerRadii.EMPTY, Insets.EMPTY))); // Fond bleu clair
+        loadingIndicator = new LoadingIndicator();
 
-        ScrollPane scrollPane = new ScrollPane(chatBox); // Ajout d'un ScrollPane pour faire défiler les messages
+        // Create header
+        HBox header = createHeader();
+        header.setBorder(null);
+
+        // Create chat area
+        VBox chatBox = new VBox(10);
+        chatBox.setPadding(new Insets(10));
+
+        // Configure ScrollPane with rounded corners
+        scrollPane = new ScrollPane(chatBox);
         scrollPane.setFitToWidth(true);
         scrollPane.setFitToHeight(true);
+        scrollPane.setBackground(new Background(new BackgroundFill(Color.WHITE, new CornerRadii(10), Insets.EMPTY)));
+        scrollPane.setStyle(
+                "-fx-background: white;" +
+                        "-fx-background-color: white;" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-padding: 0;" +
+                        "-fx-background-insets: 0;" +
+                        // Style de la barre de défilement
+                        "-fx-control-inner-background: white;" +
+                        "-fx-border-color: transparent;" +
+                        "-fx-border-width: 0;"
+        );
+        scrollPane.getStyleClass().add("edge-to-edge");
 
-        TextArea messageArea = new TextArea();
+        // Create message input area with buttons
+        HBox messageInputContainer = createMessageInputContainer(chatBox);
+        messageInputContainer.setBorder(null);
+        messageInputContainer.setBackground(new Background(new BackgroundFill(
+                Color.WHITE,
+                new CornerRadii(10),
+                Insets.EMPTY
+        )));
+
+        // PDF path label
+        pdfPathLabel = new Label();
+        pdfPathLabel.setFont(Font.font("Arial", 14));
+        pdfPathLabel.setPadding(new Insets(10));
+        pdfPathLabel.setBackground(new Background(new BackgroundFill(
+                Color.WHITE,  // Couleur plus claire
+                new CornerRadii(5),
+                Insets.EMPTY
+        )));
+        pdfPathLabel.setTextFill(Color.BLACK);
+        pdfPathLabel.setWrapText(true);
+        pdfPathLabel.setVisible(false);
+
+        // Create main container
+        VBox mainContainer = new VBox();
+        mainContainer.setBorder(null);
+        mainContainer.getChildren().add(header);
+
+        // Create content container
+        VBox contentContainer = new VBox(20);
+        contentContainer.setBorder(null);
+        contentContainer.setPadding(new Insets(30));
+        contentContainer.setAlignment(Pos.CENTER);
+        contentContainer.setBackground(new Background(new BackgroundFill(
+                Color.web("#0a4b83"),
+                new CornerRadii(0),  // Coins plus arrondis pour le conteneur principal
+                Insets.EMPTY
+        )));
+
+        // Ajout d'un effet d'ombre pour le messageInputContainer
+        DropShadow inputShadow = new DropShadow();
+        inputShadow.setColor(Color.rgb(0, 0, 0, 0.2));
+        inputShadow.setRadius(10);
+        inputShadow.setOffsetY(2);
+        messageInputContainer.setEffect(inputShadow);
+
+        // Ajout d'un effet d'ombre pour le scrollPane
+        DropShadow scrollShadow = new DropShadow();
+        scrollShadow.setColor(Color.rgb(0, 0, 0, 0.2));
+        scrollShadow.setRadius(10);
+        scrollShadow.setOffsetY(2);
+        scrollPane.setEffect(scrollShadow);
+
+        // Add scrollPane, messageInputContainer and pdfPathLabel to contentContainer
+        contentContainer.getChildren().addAll(scrollPane, messageInputContainer, pdfPathLabel);
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+        VBox.setVgrow(messageInputContainer, Priority.NEVER);
+        VBox.setVgrow(pdfPathLabel, Priority.NEVER);
+
+        // Add some margin to the components
+        VBox.setMargin(scrollPane, new Insets(0, 0, 10, 0));
+        VBox.setMargin(messageInputContainer, new Insets(0, 0, 10, 0));
+        VBox.setMargin(pdfPathLabel, new Insets(0, 0, 0, 0));
+
+        mainContainer.getChildren().add(contentContainer);
+        VBox.setVgrow(contentContainer, Priority.ALWAYS);
+
+        // Root pane with overlay capability
+        StackPane rootPane = new StackPane();
+        rootPane.getChildren().addAll(mainContainer, loadingIndicator);
+        Image icon = new Image(getClass().getResourceAsStream("/ENSET-Mohammedia2.png"));
+        // Set up the scene
+        Scene scene = new Scene(rootPane);
+        scene.widthProperty().addListener((observable, oldValue, newValue) ->
+                adjustLayout(newValue.doubleValue(), scene.getHeight()));
+        scene.heightProperty().addListener((observable, oldValue, newValue) ->
+                adjustLayout(scene.getWidth(), newValue.doubleValue()));
+
+        primaryStage.setTitle("ENSET GUIDE");
+        primaryStage.getIcons().add(icon);
+        primaryStage.setScene(scene);
+        primaryStage.setWidth(600);
+        primaryStage.setHeight(790);
+        primaryStage.show();
+    }
+
+
+    private HBox createHeader() {
+        // Main header container
+        HBox header = new HBox();
+        header.setBorder(null);
+        header.setAlignment(Pos.CENTER); // Center the content
+        header.setPadding(new Insets(10)); // Padding around header
+        header.setBackground(new Background(new BackgroundFill(Color.WHITE, CornerRadii.EMPTY, Insets.EMPTY)));
+        header.setStyle("-fx-border-color: #cccccc; -fx-border-width: 0 0 1 0;");
+
+        // Configure logo
+        ImageView logoImage = new ImageView(new Image(new File("C:\\Users\\HP\\OneDrive\\Bureau\\test\\rag_first\\src\\main\\java\\com\\enset\\test\\ENSET-Mohammedia2.png").toURI().toString()));
+        logoImage.setFitHeight(45); // Default height for the logo
+        logoImage.setPreserveRatio(true); // Maintain aspect ratio
+
+        // Create text label
+        Label guideLabel = new Label("GUIDE");
+        guideLabel.setBackground(new Background(new BackgroundFill(Color.WHITE, new CornerRadii(5), Insets.EMPTY)));
+        guideLabel.setFont(Font.font("Arial", FontWeight.BOLD, FontPosture.REGULAR, 35)); // Default font size
+        guideLabel.setTextFill(Color.web("#0a4b83"));
+
+        // Add logo and text to header
+        header.getChildren().addAll(logoImage, guideLabel);
+        header.setSpacing(5); // Spacing between logo and text
+
+        // Responsiveness: Adjust logo size dynamically
+        header.widthProperty().addListener((obs, oldWidth, newWidth) -> {
+            double width = newWidth.doubleValue();
+            if (width < 400) {
+                logoImage.setFitHeight(25); // Smaller logo for narrow widths
+                guideLabel.setFont(Font.font("Arial", FontWeight.BOLD, FontPosture.REGULAR, 20));
+            } else if (width < 700) {
+                logoImage.setFitHeight(30); // Medium size
+                guideLabel.setFont(Font.font("Arial", FontWeight.BOLD, FontPosture.REGULAR, 25));
+            } else {
+                logoImage.setFitHeight(45); // Default size
+                guideLabel.setFont(Font.font("Arial", FontWeight.BOLD, FontPosture.REGULAR, 35));
+            }
+        });
+
+        return header;
+    }
+
+
+
+
+
+    private HBox createMessageInputContainer(VBox chatBox) {
+        // Message input area (reste inchangé)
+        messageArea = new TextArea();
+        messageArea.setBorder(null);
         messageArea.setPromptText("Enter your message...");
-        messageArea.setPrefRowCount(3); // Taille de la zone de texte pour écrire les messages
+        messageArea.setPrefRowCount(1);
         messageArea.setFont(Font.font("Arial", 14));
-        messageArea.setBackground(new Background(new BackgroundFill(Color.WHITE, new CornerRadii(10), Insets.EMPTY))); // Fond blanc
-        messageArea.setPadding(new Insets(10)); // Espacement interne pour plus d'esthétique
-        HBox.setHgrow(messageArea, Priority.ALWAYS);
+        messageArea.setWrapText(true);
+        messageArea.setBackground(new Background(new BackgroundFill(Color.WHITE, new CornerRadii(10), Insets.EMPTY)));
+        messageArea.setPadding(new Insets(10));
 
-        // Gestionnaire d'événements pour la touche "Entrée"
+        // Création des boutons avec effets de survol
+        sendButton = createStyledButton(">", Color.web("#0a4b83"), "Send message");
+        Button loadPdfButton = createStyledButton("+", Color.DARKGRAY, "Load PDF file");
+        Button clearButton = createStyledButton("🗑", Color.RED, "Delete history");
+
+        // Set button actions
+        sendButton.setOnAction(event -> sendPrompt(messageArea, chatBox, sendButton));
+        loadPdfButton.setOnAction(event -> loadAndDisplayPDFPath(chatBox));
+        clearButton.setOnAction(event -> handleClearAction(chatBox));
+
         messageArea.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.ENTER) {
+            if (event.getCode() == KeyCode.ENTER && !event.isShiftDown()) {
+                event.consume();
                 sendPrompt(messageArea, chatBox, sendButton);
             }
         });
 
-        // Bouton "Send" avec un symbole Unicode
-        sendButton = new Button("\u27A4"); // Symbole de flèche vers la droite
-        sendButton.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        sendButton.setBackground(new Background(new BackgroundFill(Color.DARKBLUE, new CornerRadii(5), Insets.EMPTY)));
-        sendButton.setTextFill(Color.WHITE);
-        sendButton.setMinSize(50, 50); // Taille fixe pour le bouton (largeur et hauteur)
-        sendButton.setMaxSize(50, 50); // Taille fixe pour le bouton (largeur et hauteur)
+        // Create button container avec le nouvel ordre des boutons
+        HBox buttonContainer = new HBox(5);
+        buttonContainer.getChildren().addAll(sendButton, loadPdfButton, clearButton); // Nouvel ordre
+        buttonContainer.setAlignment(Pos.CENTER_RIGHT);
+        buttonContainer.setPadding(new Insets(0, 0, 0, 5));
 
-        sendButton.setOnAction(event -> sendPrompt(messageArea, chatBox, sendButton));
+        // Create main container for message input area
+        HBox messageInputContainer = new HBox(10);
+        messageInputContainer.setBackground(new Background(new BackgroundFill(Color.WHITE, new CornerRadii(10), Insets.EMPTY)));
+        messageInputContainer.setPadding(new Insets(10));
+        messageInputContainer.setBorder(null);
+        messageInputContainer.getChildren().addAll(messageArea, buttonContainer);
+        HBox.setHgrow(messageArea, Priority.ALWAYS);
 
+        // Add shadow effect
+        DropShadow dropShadow = new DropShadow();
+        dropShadow.setColor(Color.GRAY);
+        dropShadow.setRadius(5);
+        dropShadow.setOffsetX(2);
+        dropShadow.setOffsetY(2);
+        messageInputContainer.setEffect(dropShadow);
 
-
-
-        // Bouton "Load PDF" avec un symbole Unicode
-        Button loadPdfButton = new Button("\uD83D\uDCCE"); // Symbole de trombone (représentant un fichier)
-        loadPdfButton.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        loadPdfButton.setTextFill(Color.BLACK); // Couleur du texte en noir
-        loadPdfButton.setBackground(Background.EMPTY); // Pas d'arrière-plan
-        loadPdfButton.setMinSize(50, 50); // Taille fixe pour le bouton (largeur et hauteur)
-        loadPdfButton.setMaxSize(50, 50); // Taille fixe pour le bouton (largeur et hauteur)
-
-        loadPdfButton.setOnAction(event -> loadAndDisplayPDFPath(chatBox));
-
-        // Label pour afficher le chemin du fichier PDF
-        pdfPathLabel = new Label();
-        pdfPathLabel.setFont(Font.font("Arial", 14));
-        pdfPathLabel.setPadding(new Insets(10));
-        pdfPathLabel.setBackground(new Background(new BackgroundFill(Color.LIGHTGRAY, new CornerRadii(10), Insets.EMPTY))); // Fond gris clair
-        pdfPathLabel.setTextFill(Color.BLACK);
-        pdfPathLabel.setWrapText(true);
-
-        // Mise en page avec HBox pour regrouper les boutons
-        HBox buttonBox = new HBox(10, sendButton, loadPdfButton); // Boutons dans la même boîte
-        buttonBox.setAlignment(Pos.CENTER_RIGHT); // Aligner à droite
-
-        // Mise en page avec HBox pour aligner la zone de texte et les boutons
-        HBox inputBox = new HBox(10, messageArea, buttonBox);
-        inputBox.setAlignment(Pos.CENTER_RIGHT); // Aligner à droite
-        HBox.setHgrow(buttonBox, Priority.NEVER);
-
-        // Mise en page avec VBox pour centrer l'interface
-        VBox vbox = new VBox(20, scrollPane, inputBox, pdfPathLabel);
-        vbox.setPadding(new Insets(30));
-        vbox.setAlignment(Pos.CENTER); // Aligner au centre
-        vbox.setBackground(new Background(new BackgroundFill(Color.LIGHTBLUE, CornerRadii.EMPTY, Insets.EMPTY))); // Fond bleu clair
-        VBox.setVgrow(scrollPane, Priority.ALWAYS);
-        VBox.setVgrow(inputBox, Priority.NEVER);
-        VBox.setVgrow(pdfPathLabel, Priority.NEVER);
-
-        // Création de la scène
-        Scene scene = new Scene(vbox);
-
-        // Écouteur de changement de taille pour rendre l'interface responsive
-        scene.widthProperty().addListener((observable, oldValue, newValue) -> adjustLayout(newValue.doubleValue(), scene.getHeight()));
-        scene.heightProperty().addListener((observable, oldValue, newValue) -> adjustLayout(scene.getWidth(), newValue.doubleValue()));
-
-        // Configuration et affichage de la fenêtre
-        primaryStage.setTitle("Simple Chat Interface");
-        primaryStage.setScene(scene);
-        primaryStage.setWidth(600);
-        primaryStage.setHeight(800);
-        primaryStage.show();
+        return messageInputContainer;
     }
 
-    // Fonction pour ajuster la mise en page en fonction des dimensions de la fenêtre
-    private void adjustLayout(double width, double height) {
-        // Ajustements possibles en fonction des dimensions
-        if (width < 400) {
-            pdfPathLabel.setFont(Font.font("Arial", 10));
-        } else {
-            pdfPathLabel.setFont(Font.font("Arial", 14));
+    // Ajouter cette nouvelle méthode pour créer des boutons stylisés avec effets de survol
+    private Button createStyledButton(String text, Color baseColor, String tooltipText) {
+        Button button = new Button(text);
+        button.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+        button.setTextFill(Color.WHITE);
+        button.setMinSize(40, 40);
+        button.setMaxSize(40, 40);
+
+        // Création des backgrounds pour différents états
+        BackgroundFill normalFill = new BackgroundFill(baseColor, new CornerRadii(5), Insets.EMPTY);
+        BackgroundFill hoverFill = new BackgroundFill(baseColor.brighter(), new CornerRadii(5), Insets.EMPTY);
+        BackgroundFill pressedFill = new BackgroundFill(baseColor.darker(), new CornerRadii(5), Insets.EMPTY);
+
+        Background normalBg = new Background(normalFill);
+        Background hoverBg = new Background(hoverFill);
+        Background pressedBg = new Background(pressedFill);
+
+        // Appliquer le style normal
+        button.setBackground(normalBg);
+
+        // Ajout des effets de survol
+        button.setOnMouseEntered(e -> {
+            button.setBackground(hoverBg);
+            button.setScaleX(1.1);
+            button.setScaleY(1.1);
+        });
+
+        button.setOnMouseExited(e -> {
+            button.setBackground(normalBg);
+            button.setScaleX(1.0);
+            button.setScaleY(1.0);
+        });
+
+        button.setOnMousePressed(e -> button.setBackground(pressedBg));
+        button.setOnMouseReleased(e -> button.setBackground(normalBg));
+
+        // Ajout d'une infobulle (tooltip)
+        Tooltip tooltip = new Tooltip(tooltipText);
+        tooltip.setFont(Font.font("Arial", 12));
+        tooltip.setShowDelay(Duration.millis(100));
+        Tooltip.install(button, tooltip);
+
+        // Ajustement de la couleur du texte pour le bouton PDF
+        if (baseColor == Color.LIGHTGRAY) {
+            button.setTextFill(Color.BLACK);
+        }
+
+        return button;
+    }
+
+    private void handleClearAction(VBox chatBox) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Confirmation");
+        alert.setHeaderText("Clear Database");
+        alert.setContentText("Are you sure you want to clear all data?");
+
+        // Appliquer le style directement
+        DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.setStyle(
+                "-fx-background-color: white;" +
+                        "-fx-padding: 20px;" +
+                        "-fx-font-family: 'System';"
+        );
+
+        // Style des boutons
+        dialogPane.lookupButton(ButtonType.OK).setStyle(
+                "-fx-background-color: #3498db;" +
+                        "-fx-text-fill: white;" +
+                        "-fx-padding: 8px 16px;" +
+                        "-fx-background-radius: 4px;" +
+                        "-fx-border-radius: 4px;"
+        );
+
+        dialogPane.lookupButton(ButtonType.CANCEL).setStyle(
+                "-fx-background-color: #e74c3c;" +
+                        "-fx-text-fill: white;" +
+                        "-fx-padding: 8px 16px;" +
+                        "-fx-background-radius: 4px;" +
+                        "-fx-border-radius: 4px;"
+        );
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            Mainn.clearDatabase();
+            chatBox.getChildren().clear();
+            messageArea.clear();
+            pdfPathLabel.setVisible(false);
+            HBox confirmationBox = createMessageBox("Database and chat history cleared.", Color.GREENYELLOW, Pos.CENTER);
+            chatBox.getChildren().add(confirmationBox);
+            FadeTransition fadeOut = new FadeTransition(Duration.seconds(3), confirmationBox);
+            fadeOut.setFromValue(1.0);
+            fadeOut.setToValue(0.0);
+            fadeOut.setOnFinished(event -> chatBox.getChildren().remove(confirmationBox));
+            fadeOut.play();
+
         }
     }
-
-    // Fonction pour envoyer un message
-//    private void sendPrompt(TextArea messageArea, VBox chatBox) {
-//        String userMessage = messageArea.getText();
-//        if (!userMessage.isEmpty()) {
-//            // Ajouter le message de l'utilisateur en haut de la zone de chat
-//            HBox userMessageBox = createMessageBox(userMessage, Color.CORNFLOWERBLUE, Pos.CENTER_RIGHT);
-//            chatBox.getChildren().add(0, userMessageBox); // Ajouter le message de l'utilisateur en haut
-//
-//            messageArea.clear(); // Efface le contenu de la zone de texte après l'envoi
-//
-//            // Appeler la fonction pour générer une réponse du chatbot après un délai
-//            Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-//                String botResponse = getBotResponse(userMessage);
-//                HBox botMessageBox = createMessageBox(botResponse, Color.LIGHTBLUE.darker(), Pos.CENTER_LEFT);
-//                chatBox.getChildren().add(botMessageBox); // Ajouter la réponse du chatbot en bas
-//
-//                // Faire défiler vers le bas après l'ajout du message
-//                scrollToBottom(chatBox);
-//            }));
-//            timeline.setCycleCount(1);
-//            timeline.play();
-//        } else {
-//            System.out.println("No message to send.");
-//        }
-//    }
-
-//    private void sendPrompt(TextArea messageArea, VBox chatBox) {
-//        String userMessage = messageArea.getText();
-//        if (!userMessage.isEmpty()) {
-//            // Ajouter le message de l'utilisateur en bas de la zone de chat
-//            HBox userMessageBox = createMessageBox(userMessage, Color.CORNFLOWERBLUE, Pos.CENTER_RIGHT);
-//            chatBox.getChildren().add(userMessageBox); // Ajouter en bas
-//
-//            messageArea.clear(); // Efface le contenu de la zone de texte après l'envoi
-//
-//            // Appeler la fonction pour générer une réponse du chatbot après un délai
-//            Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-//                String botResponse = getBotResponse(userMessage);
-//                HBox botMessageBox = createMessageBox(botResponse, Color.LIGHTBLUE.darker(), Pos.CENTER_LEFT);
-//                chatBox.getChildren().add(botMessageBox); // Ajouter en bas
-//
-//                // Faire défiler vers le bas après l'ajout du message
-//                scrollToBottom(chatBox);
-//            }));
-//            timeline.setCycleCount(1);
-//            timeline.play();
-//        } else {
-//            System.out.println("No message to send.");
-//        }
-//    }
 
     private void sendPrompt(TextArea messageArea, VBox chatBox, Button sendButton) {
         String userMessage = messageArea.getText();
         if (!userMessage.isEmpty()) {
-            // Désactiver le bouton Send pendant le traitement
             sendButton.setDisable(true);
 
-            // Ajouter le message de l'utilisateur en bas de la zone de chat
-            HBox userMessageBox = createMessageBox(userMessage, Color.CORNFLOWERBLUE, Pos.CENTER_RIGHT);
+            HBox userMessageBox = createMessageBox(userMessage, Color.LIGHTGRAY, Pos.CENTER_RIGHT);
             chatBox.getChildren().add(userMessageBox);
+            scrollToBottom(chatBox);
 
-            messageArea.clear(); // Effacer la zone de texte après l'envoi
+            messageArea.clear();
 
-            // Appeler la fonction pour générer une réponse du chatbot après un délai
             Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
                 String botResponse = getBotResponse(userMessage);
-                HBox botMessageBox = createMessageBox(botResponse, Color.LIGHTBLUE.darker(), Pos.CENTER_LEFT);
+                HBox botMessageBox = createMessageBox(botResponse, Color.LIGHTGREY, Pos.CENTER_LEFT);
                 chatBox.getChildren().add(botMessageBox);
-
-                // Faire défiler vers le bas après l'ajout du message
                 scrollToBottom(chatBox);
 
-                // Réactiver le bouton Send après le traitement
                 sendButton.setDisable(false);
             }));
             timeline.setCycleCount(1);
@@ -211,41 +374,32 @@ public class SimpleChatInterface extends Application {
     }
 
 
-
-    // Fonction pour faire défiler la fenêtre de chat vers le bas
     private void scrollToBottom(VBox chatBox) {
-        // Utiliser un Timeline ou un autre moyen pour faire défiler la fenêtre vers le bas après un message
         Timeline scrollTimeline = new Timeline(new KeyFrame(Duration.seconds(0.1), event -> {
-            chatBox.layout(); // Réajuster la disposition de la VBox pour appliquer les changements
+            chatBox.layout();
+            scrollPane.setVvalue(1.0);
         }));
         scrollTimeline.play();
     }
 
-    Mainn mainn = new Mainn();
 
-    // Fonction pour générer une réponse du chatbot
     private String getBotResponse(String userMessage) {
         String response = mainn.askQuestion(userMessage);
         System.out.println("result : " + response);
         return response;
     }
 
-    // Fonction pour créer une boîte de message avec un style personnalisé
     private HBox createMessageBox(String message, Color backgroundColor, Pos alignment) {
-        // Utilisation de TextFlow au lieu de Label pour gérer mieux le texte
         TextFlow messageFlow = new TextFlow();
-        messageFlow.setStyle("-fx-font: 14 arial;"); // Appliquer une police similaire
+        messageFlow.setStyle("-fx-font: 14 arial;");
 
-        // Créer le texte et ajouter au TextFlow
         messageFlow.getChildren().add(new Text(message));
 
-        // Définir l'arrière-plan et d'autres propriétés visuelles
         messageFlow.setBackground(new Background(new BackgroundFill(backgroundColor, new CornerRadii(10), Insets.EMPTY)));
         messageFlow.setTextAlignment(TextAlignment.LEFT);
-        messageFlow.setMaxWidth(500); // Limiter la largeur, mais pas couper le texte
+        messageFlow.setMaxWidth(500);
         messageFlow.setPadding(new Insets(10));
 
-        // Ajout d'un effet d'ombre portée pour l'esthétique
         DropShadow dropShadow = new DropShadow();
         dropShadow.setColor(Color.GRAY);
         dropShadow.setRadius(5);
@@ -260,22 +414,12 @@ public class SimpleChatInterface extends Application {
         return messageBox;
     }
 
-    // Fonction pour charger un fichier PDF et afficher son chemin
-//    private void loadAndDisplayPDFPath(VBox chatBox) {
-//        FileChooser fileChooser = new FileChooser();
-//        fileChooser.setTitle("Load PDF File");
-//        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
-//        File file = fileChooser.showOpenDialog(null);
-//
-//        if (file != null) {
-//            String filePath = file.getAbsolutePath();
-//            pdfPathLabel.setText("PDF loaded: " + filePath);
-//            mainn.uploadUI(filePath);
-//            System.out.println("PDF loaded: " + filePath);
-//        } else {
-//            System.out.println("No file selected.");
-//        }
-//    }
+
+
+// Dans votre constructeur ou méthode d'initialisation
+
+// Ajoutez le loadingIndicator à votre layout principal (supposons que c'est un StackPane rootPane)
+
 
     private void loadAndDisplayPDFPath(VBox chatBox) {
         FileChooser fileChooser = new FileChooser();
@@ -284,14 +428,12 @@ public class SimpleChatInterface extends Application {
         File file = fileChooser.showOpenDialog(null);
 
         if (file != null) {
-            // Désactiver le bouton Send pendant le traitement
             sendButton.setDisable(true);
-
             String filePath = file.getAbsolutePath();
-            pdfPathLabel.setText("Processing PDF: " + filePath);
-            System.out.println("Processing PDF: " + filePath);
 
-            // Simuler le traitement avec un délai
+            // Démarrer l'indicateur de chargement
+            loadingIndicator.start("Processing PDF file...");
+
             Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(3), event -> {
                 try {
                     mainn.uploadUI(filePath);
@@ -299,9 +441,10 @@ public class SimpleChatInterface extends Application {
                     throw new RuntimeException(e);
                 }
                 pdfPathLabel.setText("PDF loaded: " + filePath);
-                System.out.println("PDF loaded: " + filePath);
+                pdfPathLabel.setVisible(true);
 
-                // Réactiver le bouton Send après le traitement
+                // Arrêter l'indicateur de chargement
+                loadingIndicator.stop();
                 sendButton.setDisable(false);
             }));
             timeline.setCycleCount(1);
@@ -310,7 +453,13 @@ public class SimpleChatInterface extends Application {
             System.out.println("No file selected.");
         }
     }
-
+    private void adjustLayout(double width, double height) {
+        if (width < 400) {
+            pdfPathLabel.setFont(Font.font("Arial", 10));
+        } else {
+            pdfPathLabel.setFont(Font.font("Arial", 14));
+        }
+    }
 
     public static void main(String[] args) {
         launch(args);
