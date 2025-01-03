@@ -160,7 +160,7 @@ public class SimpleChatInterface extends Application {
         header.setStyle("-fx-border-color: #cccccc; -fx-border-width: 0 0 1 0;");
 
         // Configure logo
-        ImageView logoImage = new ImageView(new Image(new File("C:\\Users\\HP\\OneDrive\\Bureau\\test\\rag_first\\src\\main\\java\\com\\enset\\test\\ENSET-Mohammedia2.png").toURI().toString()));
+        ImageView logoImage = new ImageView(new Image(new File("C:\\Users\\HP\\OneDrive\\Bureau\\test\\rag_first\\src\\main\\resources\\ENSET-Mohammedia2.png").toURI().toString()));
         logoImage.setFitHeight(45); // Default height for the logo
         logoImage.setPreserveRatio(true); // Maintain aspect ratio
 
@@ -352,22 +352,61 @@ public class SimpleChatInterface extends Application {
         if (!userMessage.isEmpty()) {
             sendButton.setDisable(true);
 
+            // Add user message
             HBox userMessageBox = createMessageBox(userMessage, Color.LIGHTGRAY, Pos.CENTER_RIGHT);
             chatBox.getChildren().add(userMessageBox);
             scrollToBottom(chatBox);
-
             messageArea.clear();
 
-            Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-                String botResponse = getBotResponse(userMessage);
-                HBox botMessageBox = createMessageBox(botResponse, Color.LIGHTGREY, Pos.CENTER_LEFT);
-                chatBox.getChildren().add(botMessageBox);
-                scrollToBottom(chatBox);
+            // Create loading message with dots animation
+            HBox loadingBox = createMessageBox("", Color.LIGHTGREY, Pos.CENTER_LEFT);
+            Text loadingText = new Text(".");
+            ((TextFlow)loadingBox.getChildren().get(0)).getChildren().setAll(loadingText);
+            chatBox.getChildren().add(loadingBox);
+            scrollToBottom(chatBox);
 
-                sendButton.setDisable(false);
-            }));
-            timeline.setCycleCount(1);
-            timeline.play();
+            // Dots animation
+            Timeline dotsTimeline = new Timeline(
+                    new KeyFrame(Duration.seconds(0.5), e -> loadingText.setText("..")),
+                    new KeyFrame(Duration.seconds(1.0), e -> loadingText.setText("....")),
+                    new KeyFrame(Duration.seconds(1.5), e -> loadingText.setText("......"))
+            );
+            dotsTimeline.setCycleCount(Timeline.INDEFINITE);
+            dotsTimeline.play();
+
+            // Get bot response in background
+            Thread responseThread = new Thread(() -> {
+                String botResponse = getBotResponse(userMessage);
+                javafx.application.Platform.runLater(() -> {
+                    // Stop dots animation
+                    dotsTimeline.stop();
+                    chatBox.getChildren().remove(loadingBox);
+
+                    // Create bot message box
+                    HBox botMessageBox = createMessageBox("", Color.LIGHTGREY, Pos.CENTER_LEFT);
+                    Text responseText = new Text("");
+                    ((TextFlow)botMessageBox.getChildren().get(0)).getChildren().setAll(responseText);
+                    chatBox.getChildren().add(botMessageBox);
+
+                    // Typing animation for response
+                    Timeline typingTimeline = new Timeline();
+                    final int[] charIndex = {0};
+
+                    KeyFrame[] frames = new KeyFrame[botResponse.length()];
+                    for (int i = 0; i < botResponse.length(); i++) {
+                        final int index = i;
+                        frames[i] = new KeyFrame(Duration.millis(30 * i), e -> {
+                            responseText.setText(botResponse.substring(0, index + 1));
+                            scrollToBottom(chatBox);
+                        });
+                    }
+
+                    typingTimeline.getKeyFrames().addAll(frames);
+                    typingTimeline.setOnFinished(e -> sendButton.setDisable(false));
+                    typingTimeline.play();
+                });
+            });
+            responseThread.start();
         } else {
             System.out.println("No message to send.");
         }
@@ -393,9 +432,11 @@ public class SimpleChatInterface extends Application {
         TextFlow messageFlow = new TextFlow();
         messageFlow.setStyle("-fx-font: 14 arial;");
 
-        messageFlow.getChildren().add(new Text(message));
+        Text text = new Text(message);
+        messageFlow.getChildren().add(text);
 
-        messageFlow.setBackground(new Background(new BackgroundFill(backgroundColor, new CornerRadii(10), Insets.EMPTY)));
+        messageFlow.setBackground(new Background(new BackgroundFill(
+                backgroundColor, new CornerRadii(10), Insets.EMPTY)));
         messageFlow.setTextAlignment(TextAlignment.LEFT);
         messageFlow.setMaxWidth(500);
         messageFlow.setPadding(new Insets(10));
