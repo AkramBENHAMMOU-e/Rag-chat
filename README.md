@@ -4,7 +4,7 @@
 
 ENSET Guide est une application innovante d'intelligence artificielle conçue spécifiquement pour les étudiants de l'ENSET Mohammedia. Cette solution de chat intelligente utilise la technologie RAG (Retrieval-Augmented Generation) pour fournir des réponses précises et contextuelles basées sur les documents et ressources de l'école.
 ## Démonstration en vidéo
-Regardez la vidéo de démonstration : [video.mp4](Demo/ENSETGUIDE.mp4)
+Regardez la vidéo de démonstration : [video.mp4](https://github.com/user-attachments/assets/e7ba285b-05cf-4407-a67c-88fca7eaf159)
 ## 🚀 Fonctionnalités Principales
 
 ### 1. Chat Intelligent
