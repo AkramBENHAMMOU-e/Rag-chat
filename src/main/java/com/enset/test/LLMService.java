@@ -14,7 +14,7 @@ import org.apache.http.util.EntityUtils;
 
 public class LLMService {
     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
-    private static final String API_KEY = "AIzaSyDwyxB4dCVZ-SPJAflfllaLos1DbirLprs"; // Remplacez par votre clé API valide
+    private static final String API_KEY = "AIzaSyArGburS1cEGdgZpaI9yrNMFVqDgmWqyq4"; // Remplacez par votre clé API valide
 
     /**
      * Méthode pour poser une question à l'API Gemini.

@@ -1,0 +1,49 @@
+/* Style de base pour la boîte de dialogue */
+.error-dialog {
+    -fx-background-color: #ffffff; /* Fond blanc */
+    -fx-border-color: #ff4444;     /* Bordure rouge */
+    -fx-border-width: 2px;         /* Épaisseur de la bordure */
+    -fx-border-radius: 10px;       /* Coins arrondis */
+    -fx-background-radius: 10px;   /* Coins arrondis pour le fond */
+    -fx-padding: 20px;             /* Rembourrage interne */
+}
+
+/* Style pour le texte de l'en-tête */
+.error-dialog .header-panel {
+    -fx-background-color: #ff4444; /* Fond rouge pour l'en-tête */
+    -fx-text-fill: white;          /* Texte blanc */
+    -fx-font-size: 18px;           /* Taille de police */
+    -fx-font-weight: bold;         /* Texte en gras */
+}
+
+/* Style pour le texte du contenu */
+.error-dialog .content {
+    -fx-text-fill: #333333;        /* Texte gris foncé */
+    -fx-font-size: 14px;           /* Taille de police */
+    -fx-padding: 10px 0;           /* Rembourrage */
+}
+
+.context-menu {
+    -fx-background-color: white;
+    -fx-border-color: #cccccc;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-padding: 5px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.2), 10, 0, 0, 5);
+}
+
+.menu-item {
+    -fx-font-size: 12px;
+    -fx-text-fill: #333333;
+    -fx-padding: 5px 10px;
+    -fx-background-radius: 5px;
+}
+
+.menu-item:hover {
+    -fx-background-color: #f0f0f0;
+    -fx-text-fill: #000000;
+}
+
+.menu-item .label {
+    -fx-graphic-text-gap: 5px;
+}

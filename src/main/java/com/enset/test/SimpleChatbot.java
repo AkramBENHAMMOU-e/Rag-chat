@@ -52,7 +52,7 @@ public class SimpleChatbot {
         String fullQuestion = pdfText + "\n" + question;
 
         // Use LLM service to get an answer
-        LLMService llmService = new LLMService();
+        LLMCohere llmService = new LLMCohere();
         try {
             return llmService.askQuestion(fullQuestion);
         } catch (IOException e) {
