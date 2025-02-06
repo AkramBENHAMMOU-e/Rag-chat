@@ -10,7 +10,7 @@ Regardez la vidéo de démonstration : [video.mp4](https://github.com/user-attac
 ### 1. Chat Intelligent
 - Interface conversationnelle conviviale
 - Réponses générées dynamiquement en fonction du contexte
-- Support de multiple formats de documents (PDF, DOCX, TXT)
+- Support de multiple formats de documents (PDF, DOCX, TXT, PNG, JPEG,JPG)
 
 ### 2. Gestion des Conversations
 - Création et gestion de plusieurs conversations
